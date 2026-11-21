@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (Go ${{ matrix.go }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.22.x", "stable"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: gofmt
+        run: test -z "$(gofmt -l . | tee /dev/stderr)"
+      - name: go vet
+        run: go vet ./...
+      - name: go test -race
+        run: go test -race -coverprofile=coverage.out ./...
+      - name: coverage
+        run: go tool cover -func=coverage.out | tail -1
+
+  fuzz:
+    name: fuzz smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: fuzz
+        run: |
+          go test ./fixedwidth -run '^$' -fuzz '^FuzzUnmarshal$' -fuzztime 15s -fuzzminimizetime 1s
+          go test ./cnab240 -run '^$' -fuzz '^FuzzDecodeSegment$' -fuzztime 15s -fuzzminimizetime 1s
+          go test ./file -run '^$' -fuzz '^FuzzParse$' -fuzztime 15s -fuzzminimizetime 1s
+      - name: benchmark
+        run: go test ./file -run '^$' -bench . -benchmem
