@@ -1,0 +1,18 @@
+# Binaries
+/cnab
+/cmd/cnab/cnab
+*.exe
+*.test
+
+# Profiles and coverage
+*.out
+*.prof
+coverage.*
+
+# Fuzz cache artifacts are kept in GOCACHE; crashers land in testdata/fuzz
+# and should be committed deliberately as regression inputs.
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
